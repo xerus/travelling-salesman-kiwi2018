@@ -7,15 +7,18 @@
 #include <utility>
 #include <algorithm>
 
-typedef std::unordered_map<std::string, std::unordered_set<std::string>> strDict;
-typedef std::unordered_map<std::string, unsigned> toPrice;
-typedef std::pair<std::string, toPrice> fromTo;
-static std::string start;
+typedef std::string Airport;
+typedef std::string Area;
+typedef std::unordered_set<Airport> UniquePlaces;
+typedef std::unordered_map<Area, UniquePlaces> strDict;
+typedef std::unordered_map<Airport, unsigned> toPrice;
+typedef std::vector<Airport> Way;
+static Airport start;
 static strDict airports;
-static std::unordered_map<std::string, std::string> areas;
+static std::unordered_map<Airport, Area> areas;
 static unsigned N;
 // day -> from -> to -> price
-static std::vector<std::unordered_map<std::string, toPrice>> timetable;
+static std::vector<std::unordered_map<Airport, toPrice>> timetable;
 
 
 // static unsigned
@@ -30,8 +33,8 @@ static void parseInput() {
     timetable.resize(N);
     for (unsigned i = 0; i < N - 1; i++) {
         std::getline(std::cin, area);
-        std::string port;
-        airports[area] = std::unordered_set<std::string>();
+        Airport port;
+        airports[area] = UniquePlaces();
         std::getline(std::cin, line);
         std::stringstream ss(line);
         while (std::getline(ss, port, ' ')) {
@@ -39,7 +42,7 @@ static void parseInput() {
             areas[port] = area;
         }
     }
-    std::string f, t;
+    Airport f, t;
     unsigned d, c;
     while (std::cin >> f >> t >> d >> c) {
         if (areas[f] == areas[t])
@@ -68,9 +71,9 @@ static void parseInput() {
 }
 
 
-static bool possibleAirports(const unsigned day, const std::string &from,
-                             const std::unordered_set<std::string> &visited,
-                             std::vector<std::string> &dests) {
+static bool possibleAirports(const unsigned day, const Airport &from,
+                             const UniquePlaces &visited,
+                             std::vector<Airport> &dests) {
     auto el = timetable[day].find(from);
     if (el == timetable[day].end())
         return false;
@@ -80,31 +83,29 @@ static bool possibleAirports(const unsigned day, const std::string &from,
             continue;
         dests.push_back(tc.first);
     }
-    std::sort(dests.begin(), dests.end(), [&](const std::string &a, const std::string &b) {
+    std::sort(dests.begin(), dests.end(),[&](const Airport &a, const Airport &b) {
         return timetable[day][from][a] < timetable[day][from][b];
     });
     return !dests.empty();
 }
 
-static unsigned findWay(const std::string &ns, std::unordered_set<std::string> &visited,
-                        std::vector<std::string> &way,
-                        const unsigned day, unsigned price) {
-    std::vector<std::string> dests;
+static unsigned findWay(const Airport &ns, UniquePlaces &visited,
+                        Way &way, const unsigned day, const unsigned price) {
+    std::vector<Airport> dests;
     if (day == N -1) {
         if (!possibleAirports(day, ns, visited, dests))
             return 0;
-        std::string bestEnd = dests.front();
+        Airport bestEnd = dests.front();
         way.push_back(bestEnd);
-        price += timetable[day][ns][bestEnd];
-        return price;
+        return price + timetable[day][ns][bestEnd];
     }
-    std::unordered_set<std::string> newVisited(visited);
+    UniquePlaces newVisited(visited);
     newVisited.emplace(areas[ns]);
     if (!possibleAirports(day, ns, newVisited, dests))
         return 0;
     for (const auto &p : dests) {
         unsigned newPrice = price + timetable[day][ns][p];
-        std::vector<std::string> newWay(way);
+        Way newWay(way);
         newWay.push_back(p);
         newPrice = findWay(p, newVisited, newWay, day + 1, newPrice);
         if (newPrice == 0)
@@ -131,18 +132,19 @@ static void printTimetable() {
 int main() {
     parseInput();
     // printTimetable();
-    std::unordered_set<std::string> visited;
-    std::vector<std::string> way;
+    UniquePlaces visited;
+    Way way;
     unsigned price = findWay(start, visited, way, 1, 0);
     if (!price) {
         std::cerr << "way not found" << std::endl;
         return 1;
     }
     std::cout << price << std::endl;
-    std::string ns = start;
+    Airport ns = start;
     for (unsigned day = 1; day < N; day++) {
-        const std::string t = way[day - 1];
-        std::cout << ns << " " << t << " " << day << " " << timetable[day][ns][t] << std::endl;
+        const Airport t = way[day - 1];
+        std::cout << ns << " " << t << " " << day << " "
+                  << timetable[day][ns][t] << std::endl;
         ns = t;
     }
     return 0;
