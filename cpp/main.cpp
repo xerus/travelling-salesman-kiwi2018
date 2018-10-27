@@ -10,9 +10,10 @@
 
 
 typedef std::string Airport;
-typedef std::string Area;
-typedef std::unordered_set<Airport> UniquePlaces;
-typedef std::unordered_map<Area, UniquePlaces> strDict;
+typedef unsigned Area;
+typedef std::unordered_set<Airport> UniqueAirports;
+typedef std::unordered_set<Area> UniqueAreas;
+typedef std::unordered_map<Area, UniqueAirports> strDict;
 typedef std::unordered_map<Airport, unsigned> toPrice;
 typedef std::vector<Airport> Way;
 static Airport start;
@@ -31,16 +32,17 @@ static Way bestWay;
 
 static void parseInput() {
     std::ios_base::sync_with_stdio(false);
-    std::string line, area;
+    std::string line;
     std::getline(STDIN, line);
     std::stringstream ss(line);
     ss >> N >> start;
     N = N + 1;
     timetable.resize(N);
     for (unsigned i = 0; i < N - 1; i++) {
-        std::getline(STDIN, area);
+        std::getline(STDIN, line); // skipline
+        const unsigned area = i;
         Airport port;
-        airports[area] = UniquePlaces();
+        airports[area] = UniqueAirports();
         std::getline(STDIN, line);
         std::stringstream ss(line);
         while (std::getline(ss, port, ' ')) {
@@ -83,7 +85,7 @@ static void parseInput() {
 
 
 static bool possibleAirports(const unsigned day, const Airport &from,
-                             const UniquePlaces &visited,
+                             const UniqueAreas &visited,
                              std::vector<Airport> &dests,
                              const bool greedy = true) {
     const auto el = timetable[day].find(from);
@@ -103,7 +105,7 @@ static bool possibleAirports(const unsigned day, const Airport &from,
     return !dests.empty();
 }
 
-static unsigned findWay(const Airport &ns, UniquePlaces &visited,
+static unsigned findWay(const Airport &ns, UniqueAreas &visited,
                         Way &way, const bool greedy,
                         const unsigned day, const unsigned price) {
     unsigned currentPrice = 0;
@@ -125,7 +127,7 @@ static unsigned findWay(const Airport &ns, UniquePlaces &visited,
         }
         return currentPrice;
     }
-    UniquePlaces newVisited(visited);
+    UniqueAreas newVisited(visited);
     newVisited.emplace(areas[ns]);
     if (!possibleAirports(day, ns, newVisited, dests))
         return 0;
@@ -173,7 +175,7 @@ int main() {
     else
         maxTime += std::chrono::milliseconds(14000);
     // printTimetable();
-    UniquePlaces visited;
+    UniqueAreas visited;
     Way way(N - 1);
     bestWay.resize(N - 1);
     unsigned price = findWay(start, visited, way, true, 1, 0);
