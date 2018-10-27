@@ -22,6 +22,7 @@ static unsigned N;
 // day -> from -> to -> price
 static std::vector<std::unordered_map<Airport, toPrice>> timetable;
 static auto maxTime = std::chrono::high_resolution_clock::now();
+static auto currentTime = std::chrono::high_resolution_clock::now();
 static unsigned bestPrice = 0;
 static Way bestWay;
 
@@ -103,6 +104,10 @@ static unsigned findWay(const Airport &ns, UniquePlaces &visited,
                         Way &way, const bool greedy,
                         const unsigned day, const unsigned price) {
     unsigned currentPrice = 0;
+    currentTime = std::chrono::high_resolution_clock::now();
+    if (currentTime >= maxTime) {
+        return 0;
+    }
     std::vector<Airport> dests;
     dests.reserve(16);
     if (day == N - 1) {
@@ -124,7 +129,7 @@ static unsigned findWay(const Airport &ns, UniquePlaces &visited,
 
     std::string bestDest = way[day - 1];
     for (const auto &p : dests) {
-        if (std::chrono::high_resolution_clock::now() >= maxTime) {
+        if (currentTime >= maxTime) {
             break;
         }
         way[day - 1] = p;
@@ -163,7 +168,7 @@ int main() {
     else if (N <= 101)
         maxTime += std::chrono::milliseconds(4500);
     else
-        maxTime += std::chrono::milliseconds(13500);
+        maxTime += std::chrono::milliseconds(14000);
     // printTimetable();
     UniquePlaces visited;
     Way way(N - 1);
