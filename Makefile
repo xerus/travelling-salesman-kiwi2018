@@ -6,4 +6,4 @@ tsm: cpp/main.cpp
 	g++ cpp/main.cpp $(CXXFLAGS) -o tsm
 
 test: tsm
-	sh ./test.sh
+	time -f "seconds: %e \nkbytes: %M" sh ./test.sh
