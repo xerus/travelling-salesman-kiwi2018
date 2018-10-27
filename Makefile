@@ -7,3 +7,6 @@ tsm: cpp/main.cpp
 
 test: tsm
 	time -f "seconds: %e \nkbytes: %M" sh ./test.sh
+
+clean:
+	rm -rf tsm
