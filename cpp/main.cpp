@@ -6,6 +6,8 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <chrono>
+
 
 typedef std::string Airport;
 typedef std::string Area;
@@ -19,10 +21,10 @@ static std::unordered_map<Airport, Area> areas;
 static unsigned N;
 // day -> from -> to -> price
 static std::vector<std::unordered_map<Airport, toPrice>> timetable;
+static auto maxTime = std::chrono::high_resolution_clock::now();
+static unsigned bestPrice = 0;
+static Way bestWay;
 
-
-// static unsigned
-// 
 
 static void parseInput() {
     std::string line, area;
@@ -98,36 +100,47 @@ static bool possibleAirports(const unsigned day, const Airport &from,
 }
 
 static unsigned findWay(const Airport &ns, UniquePlaces &visited,
-                        Way &way, const bool greedy = true,
-                        const unsigned day = 1, const unsigned price = 0) {
+                        Way &way, const bool greedy,
+                        const unsigned day, const unsigned price) {
+    unsigned currentPrice = 0;
     std::vector<Airport> dests;
     dests.reserve(16);
     if (day == N - 1) {
         if (!possibleAirports(day, ns, visited, dests))
             return 0;
         Airport bestEnd = dests.front();
-        way.push_back(bestEnd);
-        return price + timetable[day][ns][bestEnd];
+        way[day - 1] = bestEnd;
+        currentPrice = price + timetable[day][ns][bestEnd];
+        if (bestPrice == 0 || currentPrice < bestPrice) {
+            bestWay = way;
+            bestPrice = currentPrice;
+        }
+        return currentPrice;
     }
     UniquePlaces newVisited(visited);
     newVisited.emplace(areas[ns]);
     if (!possibleAirports(day, ns, newVisited, dests))
         return 0;
 
-    Way newWay(way);
-    const unsigned lastElementId = newWay.size() + 1;
-    newWay.resize(lastElementId + 1);
+    std::string bestDest = way[day - 1];
     for (const auto &p : dests) {
-        newWay[lastElementId] = p;
-        const unsigned newPrice = findWay(p, newVisited, newWay, greedy,
+        if (std::chrono::high_resolution_clock::now() >= maxTime) {
+            break;
+        }
+        way[day - 1] = p;
+        const unsigned newPrice = findWay(p, newVisited, way, greedy,
                                           day + 1,
                                           price + timetable[day][ns][p]);
-        if (newPrice == 0)
+        if (newPrice == 0) {
             continue;
-        way = std::move(newWay);
-        return newPrice;
+        }
+        if (currentPrice == 0 || newPrice < currentPrice) {
+            currentPrice = newPrice;
+            bestDest = p;
+        }
     }
-    return 0;
+    way[day - 1] = bestDest;
+    return currentPrice;
 }
 
 
@@ -145,19 +158,25 @@ static void printTimetable() {
 
 int main() {
     parseInput();
+    if (N <= 21)
+        maxTime += std::chrono::milliseconds(2500);
+    else if (N <= 101)
+        maxTime += std::chrono::milliseconds(4500);
+    else
+        maxTime += std::chrono::milliseconds(13500);
     // printTimetable();
     UniquePlaces visited;
-    Way way;
-    way.reserve(N);
-    unsigned price = findWay(start, visited, way, true);
-    if (!price) {
+    Way way(N - 1);
+    bestWay.resize(N - 1);
+    unsigned price = findWay(start, visited, way, false, 1, 0);
+    if (!bestPrice) {
         std::cerr << "way not found" << std::endl;
         return 1;
     }
-    std::cout << price << std::endl;
+    std::cout << bestPrice << std::endl;
     Airport ns = start;
     for (unsigned day = 1; day < N; day++) {
-        const Airport t = way[day - 1];
+        const Airport t = bestWay[day - 1];
         std::cout << ns << " " << t << " " << day << " "
                   << timetable[day][ns][t] << std::endl;
         ns = t;
