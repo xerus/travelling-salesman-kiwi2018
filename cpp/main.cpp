@@ -27,18 +27,21 @@ static unsigned bestPrice = 0;
 static Way bestWay;
 
 
+#define STDIN std::cin
+
 static void parseInput() {
+    std::ios_base::sync_with_stdio(false);
     std::string line, area;
-    std::getline(std::cin, line);
+    std::getline(STDIN, line);
     std::stringstream ss(line);
     ss >> N >> start;
     N = N + 1;
     timetable.resize(N);
     for (unsigned i = 0; i < N - 1; i++) {
-        std::getline(std::cin, area);
+        std::getline(STDIN, area);
         Airport port;
         airports[area] = UniquePlaces();
-        std::getline(std::cin, line);
+        std::getline(STDIN, line);
         std::stringstream ss(line);
         while (std::getline(ss, port, ' ')) {
             airports[area].insert(port);
@@ -47,7 +50,7 @@ static void parseInput() {
     }
     Airport f, t;
     unsigned d, c;
-    while (std::cin >> f >> t >> d >> c) {
+    while (STDIN >> f >> t >> d >> c) {
         if (areas[f] == areas[t])
             continue;
         unsigned startDay = d, endDay = d + 1;
