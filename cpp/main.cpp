@@ -49,7 +49,12 @@ static void parseInput() {
             continue;
         unsigned startDay = d, endDay = d + 1;
         if (d == 0) {
-            startDay = (f == start) ? 1 : (areas[t] == areas[start]) ? N - 1 : 2;
+            if (f == start)
+                startDay = 1;
+            else if (areas[t] == areas[start])
+                startDay = N - 1;
+            else
+                startDay = 2;
             endDay = N;
         }
         for (unsigned day = startDay; day < endDay; day++) {
@@ -83,7 +88,8 @@ static bool possibleAirports(const unsigned day, const Airport &from,
             continue;
         dests.push_back(tc.first);
     }
-    std::sort(dests.begin(), dests.end(),[&](const Airport &a, const Airport &b) {
+    std::sort(dests.begin(), dests.end(),
+              [&](const Airport &a, const Airport &b) {
         return timetable[day][from][a] < timetable[day][from][b];
     });
     return !dests.empty();
