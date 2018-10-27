@@ -78,27 +78,31 @@ static void parseInput() {
 
 static bool possibleAirports(const unsigned day, const Airport &from,
                              const UniquePlaces &visited,
-                             std::vector<Airport> &dests) {
-    auto el = timetable[day].find(from);
+                             std::vector<Airport> &dests,
+                             const bool greedy = true) {
+    const auto el = timetable[day].find(from);
     if (el == timetable[day].end())
         return false;
-    dests.clear();
     for (const auto &tc : el->second) {
         if (day < N - 1 && visited.find(areas[tc.first]) != visited.end())
             continue;
         dests.push_back(tc.first);
     }
-    std::sort(dests.begin(), dests.end(),
-              [&](const Airport &a, const Airport &b) {
-        return timetable[day][from][a] < timetable[day][from][b];
-    });
+    if (greedy) {
+        std::sort(dests.begin(), dests.end(),
+                  [&](const Airport &a, const Airport &b) {
+            return el->second[a] < el->second[b];
+        });
+    }
     return !dests.empty();
 }
 
 static unsigned findWay(const Airport &ns, UniquePlaces &visited,
-                        Way &way, const unsigned day, const unsigned price) {
+                        Way &way, const bool greedy = true,
+                        const unsigned day = 1, const unsigned price = 0) {
     std::vector<Airport> dests;
-    if (day == N -1) {
+    dests.reserve(16);
+    if (day == N - 1) {
         if (!possibleAirports(day, ns, visited, dests))
             return 0;
         Airport bestEnd = dests.front();
@@ -109,14 +113,18 @@ static unsigned findWay(const Airport &ns, UniquePlaces &visited,
     newVisited.emplace(areas[ns]);
     if (!possibleAirports(day, ns, newVisited, dests))
         return 0;
+
+    Way newWay(way);
+    const unsigned lastElementId = newWay.size() + 1;
+    newWay.resize(lastElementId + 1);
     for (const auto &p : dests) {
-        unsigned newPrice = price + timetable[day][ns][p];
-        Way newWay(way);
-        newWay.push_back(p);
-        newPrice = findWay(p, newVisited, newWay, day + 1, newPrice);
+        newWay[lastElementId] = p;
+        const unsigned newPrice = findWay(p, newVisited, newWay, greedy,
+                                          day + 1,
+                                          price + timetable[day][ns][p]);
         if (newPrice == 0)
             continue;
-        way = newWay;
+        way = std::move(newWay);
         return newPrice;
     }
     return 0;
@@ -140,7 +148,8 @@ int main() {
     // printTimetable();
     UniquePlaces visited;
     Way way;
-    unsigned price = findWay(start, visited, way, 1, 0);
+    way.reserve(N);
+    unsigned price = findWay(start, visited, way, true);
     if (!price) {
         std::cerr << "way not found" << std::endl;
         return 1;
