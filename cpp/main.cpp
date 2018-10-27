@@ -1,3 +1,4 @@
+#include <random>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -27,6 +28,8 @@ static auto currentTime = std::chrono::high_resolution_clock::now();
 static unsigned bestPrice = 0;
 static Way bestWay;
 
+static std::random_device rd;
+static std::mt19937 g(rd());
 
 #define STDIN std::cin
 
@@ -87,7 +90,7 @@ static void parseInput() {
 static bool possibleAirports(const unsigned day, const Airport &from,
                              const UniqueAreas &visited,
                              std::vector<Airport> &dests,
-                             const bool greedy = true) {
+                             const bool greedy, const bool random) {
     const auto el = timetable[day].find(from);
     if (el == timetable[day].end())
         return false;
@@ -96,7 +99,9 @@ static bool possibleAirports(const unsigned day, const Airport &from,
             continue;
         dests.push_back(tc.first);
     }
-    if (greedy) {
+    if (random && day < N - 1) {
+        std::shuffle(dests.begin(), dests.end(), g);
+    } else if (greedy) {
         std::sort(dests.begin(), dests.end(),
                   [&](const Airport &a, const Airport &b) {
             return el->second[a] < el->second[b];
@@ -106,7 +111,8 @@ static bool possibleAirports(const unsigned day, const Airport &from,
 }
 
 static unsigned findWay(const Airport &ns, UniqueAreas &visited,
-                        Way &way, const bool greedy,
+                        Way &way, const bool greedy, const bool random,
+                        int tries,
                         const unsigned day, const unsigned price) {
     unsigned currentPrice = 0;
     currentTime = std::chrono::high_resolution_clock::now();
@@ -116,7 +122,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
     std::vector<Airport> dests;
     dests.reserve(16);
     if (day == N - 1) {
-        if (!possibleAirports(day, ns, visited, dests))
+        if (!possibleAirports(day, ns, visited, dests, greedy, random))
             return 0;
         Airport bestEnd = dests.front();
         way[day - 1] = bestEnd;
@@ -129,7 +135,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
     }
     UniqueAreas newVisited(visited);
     newVisited.emplace(areas[ns]);
-    if (!possibleAirports(day, ns, newVisited, dests))
+    if (!possibleAirports(day, ns, newVisited, dests, greedy, random))
         return 0;
 
     std::string bestDest = way[day - 1];
@@ -138,8 +144,8 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
             break;
         }
         way[day - 1] = p;
-        const unsigned newPrice = findWay(p, newVisited, way, greedy,
-                                          day + 1,
+        const unsigned newPrice = findWay(p, newVisited, way, greedy, random,
+                                          tries, day + 1,
                                           price + timetable[day][ns][p]);
         if (newPrice == 0) {
             continue;
@@ -147,6 +153,9 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
         if (currentPrice == 0 || newPrice < currentPrice) {
             currentPrice = newPrice;
             bestDest = p;
+        }
+        if (--tries <= 0) {
+            break;
         }
     }
     way[day - 1] = bestDest;
@@ -178,7 +187,8 @@ int main() {
     UniqueAreas visited;
     Way way(N - 1);
     bestWay.resize(N - 1);
-    unsigned price = findWay(start, visited, way, true, 1, 0);
+    findWay(start, visited, way, true, false, 3, 1, 0);
+    findWay(start, visited, way, false, true, 1000, 1, 0);
     if (!bestPrice) {
         std::cerr << "way not found" << std::endl;
         return 1;
