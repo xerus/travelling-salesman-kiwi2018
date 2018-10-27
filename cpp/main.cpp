@@ -173,7 +173,7 @@ int main() {
     UniquePlaces visited;
     Way way(N - 1);
     bestWay.resize(N - 1);
-    unsigned price = findWay(start, visited, way, false, 1, 0);
+    unsigned price = findWay(start, visited, way, true, 1, 0);
     if (!bestPrice) {
         std::cerr << "way not found" << std::endl;
         return 1;
