@@ -67,6 +67,7 @@ static void parseInput() {
     }
 }
 
+
 static bool possibleAirports(const unsigned day, const std::string &from,
                              const std::unordered_set<std::string> &visited,
                              std::vector<std::string> &dests) {
