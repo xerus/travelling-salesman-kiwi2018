@@ -123,7 +123,7 @@ static void parseInput() {
 static bool possibleAirports(const unsigned day, const Airport &from,
                              const UniqueAreas &visited,
                              std::vector<Airport> &dests,
-                             const bool greedy, const bool random) {
+                             const bool random) {
     if (day == N - 1) {
         if (next[day][from].empty()) {
             return false;
@@ -145,7 +145,7 @@ static bool possibleAirports(const unsigned day, const Airport &from,
 }
 
 static unsigned findWay(const Airport &ns, UniqueAreas &visited,
-                        Way &way, const bool greedy, const bool random,
+                        Way &way, const bool random,
                         int tries,
                         const unsigned day, const unsigned price) {
     unsigned currentPrice = 0;
@@ -159,7 +159,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
     std::vector<Airport> dests;
     dests.reserve(16);
     if (day == N - 1) {
-        if (!possibleAirports(day, ns, visited, dests, greedy, random))
+        if (!possibleAirports(day, ns, visited, dests, random))
             return 0;
         Airport bestEnd = dests.front();
         way[day - 1] = bestEnd;
@@ -172,7 +172,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
     }
     UniqueAreas newVisited(visited);
     newVisited[areas[ns]] = true;
-    if (!possibleAirports(day, ns, newVisited, dests, greedy, random))
+    if (!possibleAirports(day, ns, newVisited, dests, random))
         return 0;
 
     Airport bestDest = way[day - 1];
@@ -182,7 +182,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
         }
         way[day - 1] = p;
         unsigned newPrice = price + timetable[day][ns][p];
-        newPrice = findWay(p, newVisited, way, greedy, random,
+        newPrice = findWay(p, newVisited, way, random,
                            tries, day + 1, newPrice);
         if (newPrice == 0) {
             continue;
@@ -274,9 +274,9 @@ int main() {
     UniqueAreas visited(N - 1, false);
     Way way(N - 1);
     bestWay.resize(N - 1);
-    findWay(start, visited, way, true, false, tries, 1, 0);
+    findWay(start, visited, way, false, tries, 1, 0);
     while (currentTime < maxTime) {
-        findWay(start, visited, way, false, true, tries, 1, 0);
+        findWay(start, visited, way, true, tries, 1, 0);
         tries++;
 #ifdef DEBUG_OUTPUT
         generated++;
