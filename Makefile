@@ -1,4 +1,4 @@
-CXXFLAGS=-std=c++14 -O3 -Wall -Wextra
+CXXFLAGS=-std=c++14 -O3 -Wall -Wextra -DDEBUG_OUTPUT
 
 all: tsm
 

@@ -193,6 +193,16 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
 
 int main() {
     parseInput();
+#ifdef DEBUG_OUTPUT
+    unsigned generated = 0;
+    currentTime = std::chrono::high_resolution_clock::now();
+    auto diff = currentTime - maxTime;
+    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
+    std::cerr << " Areas: " << N - 1 << std::endl
+              << " Seconds to parse input: "
+              << millis.count() / 1000.
+              << std::endl;
+#endif
     int tries;
     if (N <= 21) {
         maxTime += std::chrono::milliseconds(2500);
@@ -212,7 +222,13 @@ int main() {
     while (currentTime < maxTime) {
         findWay(start, visited, way, false, true, tries, 1, 0);
         tries++;
+#ifdef DEBUG_OUTPUT
+        generated++;
+#endif
     }
+#ifdef DEBUG_OUTPUT
+    std::cerr << " Randomly generated: " << generated << std::endl;
+#endif
     if (!bestPrice) {
         std::cerr << "way not found" << std::endl;
         return 1;
