@@ -15,12 +15,14 @@ typedef unsigned Airport;
 typedef unsigned Area;
 typedef std::unordered_set<Airport> UniqueAirports;
 typedef std::unordered_set<Area> UniqueAreas;
-typedef std::unordered_map<Area, UniqueAirports> strDict;
+// Area -> set(Airports)
+typedef std::vector<UniqueAirports> strDict;
 typedef std::unordered_map<Airport, unsigned> toPrice;
 typedef std::vector<Airport> Way;
 static Airport start;
 static strDict airports;
-static std::unordered_map<Airport, Area> areas;
+// Airport -> Area
+static std::vector<Area> areas;
 static unsigned N;
 // day -> from -> to -> price
 static std::vector<std::unordered_map<Airport, toPrice>> timetable;
@@ -30,7 +32,8 @@ static unsigned bestPrice = std::numeric_limits<unsigned>::max();
 static Way bestWay;
 
 static std::unordered_map<std::string, Airport> strToAirportId;
-static std::unordered_map<Airport, std::string> airportIdtoStr;
+// Airport -> string
+static std::vector<std::string> airportIdtoStr;
 
 static std::mt19937 g(10);
 
@@ -45,19 +48,20 @@ static void parseInput() {
     std::stringstream ss(line);
     ss >> N >> startStr;
     N = N + 1;
-    timetable.resize(N);
-    for (unsigned i = 0; i < N - 1; i++) {
+    areas.reserve(2 * N);
+    airportIdtoStr.reserve(2 * N);
+    airports.resize(N - 1,  UniqueAirports());
+    timetable.resize(N, std::unordered_map<Airport, toPrice>());
+    for (unsigned area = 0; area < N - 1; area++) {
         std::getline(STDIN, line); // skipline
-        const unsigned area = i;
         std::string port;
-        airports[area] = UniqueAirports();
         std::getline(STDIN, line);
         std::stringstream ss(line);
         while (std::getline(ss, port, ' ')) {
             strToAirportId[port] = airportId;
-            airportIdtoStr[airportId] = port;
+            airportIdtoStr.push_back(port);
             airports[area].insert(airportId);
-            areas[airportId] = area;
+            areas.push_back(area);
             airportId++;
         }
     }
