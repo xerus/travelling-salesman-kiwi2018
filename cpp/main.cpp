@@ -182,20 +182,23 @@ int main() {
     int tries;
     if (N <= 21) {
         maxTime += std::chrono::milliseconds(2500);
-        tries = 3;
+        tries = 6;
     } else if (N <= 101) {
         maxTime += std::chrono::milliseconds(4500);
-        tries = 3;
+        tries = 4;
     } else {
-        maxTime += std::chrono::milliseconds(14000);
-        tries = 3;
+        maxTime += std::chrono::milliseconds(14200);
+        tries = 4;
     }
     // printTimetable();
     UniqueAreas visited;
     Way way(N - 1);
     bestWay.resize(N - 1);
-    findWay(start, visited, way, true, false, tries, 1, 0);
-    findWay(start, visited, way, false, true, 1000, 1, 0);
+    while (currentTime < maxTime) {
+        findWay(start, visited, way, true, false, tries, 1, 0);
+        findWay(start, visited, way, false, true, tries, 1, 0);
+        tries++;
+    }
     if (!bestPrice) {
         std::cerr << "way not found" << std::endl;
         return 1;
