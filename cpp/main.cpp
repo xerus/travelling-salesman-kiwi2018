@@ -10,7 +10,7 @@
 #include <chrono>
 
 
-typedef std::string Airport;
+typedef unsigned Airport;
 typedef unsigned Area;
 typedef std::unordered_set<Airport> UniqueAirports;
 typedef std::unordered_set<Area> UniqueAreas;
@@ -28,33 +28,45 @@ static auto currentTime = std::chrono::high_resolution_clock::now();
 static unsigned bestPrice = 0;
 static Way bestWay;
 
+static std::unordered_map<std::string, Airport> strToAirportId;
+static std::unordered_map<Airport, std::string> airportIdtoStr;
+
 static std::mt19937 g(10);
 
 #define STDIN std::cin
 
 static void parseInput() {
+    std::string startStr;
+    unsigned airportId = 0;
     std::ios_base::sync_with_stdio(false);
     std::string line;
     std::getline(STDIN, line);
     std::stringstream ss(line);
-    ss >> N >> start;
+    ss >> N >> startStr;
     N = N + 1;
     timetable.resize(N);
     for (unsigned i = 0; i < N - 1; i++) {
         std::getline(STDIN, line); // skipline
         const unsigned area = i;
-        Airport port;
+        std::string port;
         airports[area] = UniqueAirports();
         std::getline(STDIN, line);
         std::stringstream ss(line);
         while (std::getline(ss, port, ' ')) {
-            airports[area].insert(port);
-            areas[port] = area;
+            strToAirportId[port] = airportId;
+            airportIdtoStr[airportId] = port;
+            airports[area].insert(airportId);
+            areas[airportId] = area;
+            airportId++;
         }
     }
+    std::string ff, tt;
     Airport f, t;
     unsigned d, c;
-    while (STDIN >> f >> t >> d >> c) {
+    start = strToAirportId[startStr];
+    while (STDIN >> ff >> tt >> d >> c) {
+        f = strToAirportId[ff];
+        t = strToAirportId[tt];
         if (areas[f] == areas[t])
             continue;
         unsigned startDay = d, endDay = d + 1;
@@ -100,7 +112,7 @@ static bool possibleAirports(const unsigned day, const Airport &from,
     }
     if (random && day < N - 1) {
         std::shuffle(dests.begin(), dests.end(), g);
-    } else if (greedy) {
+    } else if (greedy || day >= N - 1) {
         std::sort(dests.begin(), dests.end(),
                   [&](const Airport &a, const Airport &b) {
             return el->second[a] < el->second[b];
@@ -140,7 +152,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
     if (!possibleAirports(day, ns, newVisited, dests, greedy, random))
         return 0;
 
-    std::string bestDest = way[day - 1];
+    Airport bestDest = way[day - 1];
     for (const auto &p : dests) {
         if (currentTime >= maxTime) {
             break;
@@ -165,16 +177,18 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
 }
 
 
-static void printTimetable() {
-    for (unsigned day = 0; day < N; day++) {
-        std::cout << "day: " << day << std::endl;
-        for (const auto &ft : timetable[day]) {
-            for (const auto &tc : ft.second) {
-                std::cout << ft.first << " -> " << tc.first << ": " << tc.second << std::endl;
-            }
-        }
-    }
-}
+// static void printTimetable() {
+//     for (unsigned day = 0; day < N; day++) {
+//         std::cerr << "day: " << day << std::endl;
+//         for (const auto &ft : timetable[day]) {
+//             for (const auto &tc : ft.second) {
+//                 std::cerr << airportIdtoStr[ft.first] << " -> "
+//                           << airportIdtoStr[tc.first] << ": "
+//                           << tc.second << std::endl;
+//             }
+//         }
+//     }
+// }
 
 
 int main() {
@@ -194,8 +208,8 @@ int main() {
     UniqueAreas visited;
     Way way(N - 1);
     bestWay.resize(N - 1);
+    findWay(start, visited, way, true, false, tries, 1, 0);
     while (currentTime < maxTime) {
-        findWay(start, visited, way, true, false, tries, 1, 0);
         findWay(start, visited, way, false, true, tries, 1, 0);
         tries++;
     }
@@ -207,7 +221,8 @@ int main() {
     Airport ns = start;
     for (unsigned day = 1; day < N; day++) {
         const Airport t = bestWay[day - 1];
-        std::cout << ns << " " << t << " " << day << " "
+        std::cout << airportIdtoStr[ns] << " " << airportIdtoStr[t] << " "
+                  << day << " "
                   << timetable[day][ns][t] << std::endl;
         ns = t;
     }
