@@ -11,13 +11,16 @@
 #include <limits>
 
 
+const static unsigned maxVal = std::numeric_limits<unsigned>::max();
 typedef unsigned Airport;
 typedef unsigned Area;
 typedef std::unordered_set<Airport> UniqueAirports;
-typedef std::unordered_set<Area> UniqueAreas;
+// Area -> visited?
+typedef std::vector<bool> UniqueAreas;
 // Area -> set(Airports)
 typedef std::vector<UniqueAirports> strDict;
-typedef std::unordered_map<Airport, unsigned> toPrice;
+// Airport -> Price
+typedef std::vector<unsigned> toPrice;
 typedef std::vector<Airport> Way;
 static Airport start;
 static strDict airports;
@@ -25,10 +28,12 @@ static strDict airports;
 static std::vector<Area> areas;
 static unsigned N;
 // day -> from -> to -> price
-static std::vector<std::unordered_map<Airport, toPrice>> timetable;
+static std::vector<std::vector<toPrice>> timetable;
+// day -> from -> set(to)
+static std::vector<std::vector<std::vector<Airport>>> prev, next;
 static auto maxTime = std::chrono::high_resolution_clock::now();
 static auto currentTime = std::chrono::high_resolution_clock::now();
-static unsigned bestPrice = std::numeric_limits<unsigned>::max();
+static unsigned bestPrice = maxVal;
 static Way bestWay;
 
 static std::unordered_map<std::string, Airport> strToAirportId;
@@ -51,7 +56,6 @@ static void parseInput() {
     areas.reserve(2 * N);
     airportIdtoStr.reserve(2 * N);
     airports.resize(N - 1,  UniqueAirports());
-    timetable.resize(N, std::unordered_map<Airport, toPrice>());
     for (unsigned area = 0; area < N - 1; area++) {
         std::getline(STDIN, line); // skipline
         std::string port;
@@ -65,6 +69,14 @@ static void parseInput() {
             airportId++;
         }
     }
+
+    next.resize(N, std::vector<std::vector<Airport>>(airportId,
+                                                     std::vector<Airport>()));
+    prev.resize(N, std::vector<std::vector<Airport>>(airportId,
+                                                     std::vector<Airport>()));
+    timetable.resize(N, std::vector<toPrice>(airportId,
+                                             toPrice(airportId, maxVal)));
+
     std::string ff, tt;
     Airport f, t;
     unsigned d, c;
@@ -87,16 +99,10 @@ static void parseInput() {
         for (unsigned day = startDay; day < endDay; day++) {
             if (day == N - 1 && areas[t] != areas[start])
                 continue;
-            auto el = timetable[day].find(f);
-            if (el == timetable[day].end()) {
-                timetable[day][f] = {{t, c}};
-            } else {
-                auto elT = el->second.find(t);
-                if (elT == el->second.end()) {
-                    el->second[t] = c;
-                } else if (elT->second > c) {
-                    elT->second = c;
-                }
+            next[day][f].push_back(t);
+            const unsigned currentPrice = timetable[day][f][t];
+            if (c < currentPrice) {
+                timetable[day][f][t] = c;
             }
         }
     }
@@ -107,20 +113,17 @@ static bool possibleAirports(const unsigned day, const Airport &from,
                              const UniqueAreas &visited,
                              std::vector<Airport> &dests,
                              const bool greedy, const bool random) {
-    const auto el = timetable[day].find(from);
-    if (el == timetable[day].end())
-        return false;
-    for (const auto &tc : el->second) {
-        if (day < N - 1 && visited.find(areas[tc.first]) != visited.end())
+    for (const auto to : next[day][from]) {
+        if (day < N - 1 && visited[areas[to]])
             continue;
-        dests.push_back(tc.first);
+        dests.push_back(to);
     }
     if (random && day < N - 1) {
         std::shuffle(dests.begin(), dests.end(), g);
     } else if (greedy || day >= N - 1) {
         std::sort(dests.begin(), dests.end(),
                   [&](const Airport &a, const Airport &b) {
-            return el->second[a] < el->second[b];
+            return timetable[day][from][a] < timetable[day][from][b];
         });
     }
     return !dests.empty();
@@ -153,7 +156,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
         return currentPrice;
     }
     UniqueAreas newVisited(visited);
-    newVisited.emplace(areas[ns]);
+    newVisited[areas[ns]] = true;
     if (!possibleAirports(day, ns, newVisited, dests, greedy, random))
         return 0;
 
@@ -195,6 +198,39 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
 //     }
 // }
 
+static unsigned wayCost(const Way &way,
+                        const unsigned startDay = 1, /* 1 and greater */
+                        const unsigned endDay = N /* N and smaller */) {
+    unsigned cost = 0;
+    Airport from = (startDay > 1) ? way[startDay - 2] : start;
+    for (unsigned day = startDay; day < endDay; day++) {
+        Airport to = way[day - 1];
+        cost += timetable[day][from][to];
+        from = to;
+    }
+    return cost;
+}
+
+// static bool reachableAirports(const unsigned day, const Airport &from,)
+
+
+// static bool wayThru(const Way &way, const unsigned day,
+//                     const Airport &from, const Airport &to,
+//                     const Area &thru, Airport &transit) {
+//     ;
+// }
+
+
+// static bool swapAreas(Way &way, const unsigned dayA, const unsigned dayB) {
+//     ;
+// }
+// static bool optimizeWay(Way &way,
+//                         const unsigned startDay,
+//                         const unsigned endDay,
+//                         int tries) {
+//     ;
+// }
+
 
 int main() {
     parseInput();
@@ -220,7 +256,7 @@ int main() {
         tries = 4;
     }
     // printTimetable();
-    UniqueAreas visited;
+    UniqueAreas visited(N - 1, false);
     Way way(N - 1);
     bestWay.resize(N - 1);
     findWay(start, visited, way, true, false, tries, 1, 0);
@@ -234,11 +270,10 @@ int main() {
 #ifdef DEBUG_OUTPUT
     std::cerr << " Randomly generated: " << generated << std::endl;
 #endif
-    if (!bestPrice) {
-        std::cerr << "way not found" << std::endl;
-        return 1;
-    }
     std::cout << bestPrice << std::endl;
+#ifdef DEBUG_OUTPUT
+    std::cerr << wayCost(bestWay) << std::endl;
+#endif
     Airport ns = start;
     for (unsigned day = 1; day < N; day++) {
         const Airport t = bestWay[day - 1];
