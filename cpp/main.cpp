@@ -124,12 +124,21 @@ static bool possibleAirports(const unsigned day, const Airport &from,
                              const UniqueAreas &visited,
                              std::vector<Airport> &dests,
                              const bool greedy, const bool random) {
+    if (day == N - 1) {
+        if (next[day][from].empty()) {
+            return false;
+        }
+        // get the cheapest
+        dests.push_back(next[day][from].front());
+        return true;
+    }
+    // day < N - 1
     for (const auto to : next[day][from]) {
-        if (day < N - 1 && visited[areas[to]])
+        if (visited[areas[to]])
             continue;
         dests.push_back(to);
     }
-    if (random && day < N - 1) {
+    if (random) {
         std::shuffle(dests.begin(), dests.end(), g);
     }
     return !dests.empty();
