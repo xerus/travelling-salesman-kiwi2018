@@ -28,8 +28,7 @@ static auto currentTime = std::chrono::high_resolution_clock::now();
 static unsigned bestPrice = 0;
 static Way bestWay;
 
-static std::random_device rd;
-static std::mt19937 g(rd());
+static std::mt19937 g(10);
 
 #define STDIN std::cin
 
