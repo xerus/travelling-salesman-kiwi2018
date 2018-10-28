@@ -8,6 +8,7 @@
 #include <utility>
 #include <algorithm>
 #include <chrono>
+#include <limits>
 
 
 typedef unsigned Airport;
@@ -25,7 +26,7 @@ static unsigned N;
 static std::vector<std::unordered_map<Airport, toPrice>> timetable;
 static auto maxTime = std::chrono::high_resolution_clock::now();
 static auto currentTime = std::chrono::high_resolution_clock::now();
-static unsigned bestPrice = 0;
+static unsigned bestPrice = std::numeric_limits<unsigned>::max();
 static Way bestWay;
 
 static std::unordered_map<std::string, Airport> strToAirportId;
@@ -130,7 +131,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
     if (currentTime >= maxTime) {
         return 0;
     }
-    if (bestPrice != 0 && bestPrice < price) {
+    if (bestPrice < price) {
         return price;
     }
     std::vector<Airport> dests;
@@ -141,7 +142,7 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
         Airport bestEnd = dests.front();
         way[day - 1] = bestEnd;
         currentPrice = price + timetable[day][ns][bestEnd];
-        if (bestPrice == 0 || currentPrice < bestPrice) {
+        if (currentPrice < bestPrice) {
             bestWay = way;
             bestPrice = currentPrice;
         }
