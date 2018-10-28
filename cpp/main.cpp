@@ -118,6 +118,9 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
     if (currentTime >= maxTime) {
         return 0;
     }
+    if (bestPrice != 0 && bestPrice < price) {
+        return price;
+    }
     std::vector<Airport> dests;
     dests.reserve(16);
     if (day == N - 1) {
@@ -143,9 +146,9 @@ static unsigned findWay(const Airport &ns, UniqueAreas &visited,
             break;
         }
         way[day - 1] = p;
-        const unsigned newPrice = findWay(p, newVisited, way, greedy, random,
-                                          tries, day + 1,
-                                          price + timetable[day][ns][p]);
+        unsigned newPrice = price + timetable[day][ns][p];
+        newPrice = findWay(p, newVisited, way, greedy, random,
+                           tries, day + 1, newPrice);
         if (newPrice == 0) {
             continue;
         }
@@ -176,17 +179,22 @@ static void printTimetable() {
 
 int main() {
     parseInput();
-    if (N <= 21)
+    int tries;
+    if (N <= 21) {
         maxTime += std::chrono::milliseconds(2500);
-    else if (N <= 101)
+        tries = 3;
+    } else if (N <= 101) {
         maxTime += std::chrono::milliseconds(4500);
-    else
+        tries = 3;
+    } else {
         maxTime += std::chrono::milliseconds(14000);
+        tries = 3;
+    }
     // printTimetable();
     UniqueAreas visited;
     Way way(N - 1);
     bestWay.resize(N - 1);
-    findWay(start, visited, way, true, false, 3, 1, 0);
+    findWay(start, visited, way, true, false, tries, 1, 0);
     findWay(start, visited, way, false, true, 1000, 1, 0);
     if (!bestPrice) {
         std::cerr << "way not found" << std::endl;
