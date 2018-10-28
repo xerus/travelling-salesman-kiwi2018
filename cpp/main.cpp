@@ -106,6 +106,17 @@ static void parseInput() {
             }
         }
     }
+    for (unsigned day = 1; day < N; day++) {
+        for (unsigned f = 0; f < airportId; f++) {
+            std::sort(next[day][f].begin(), next[day][f].end(),
+                [&](const Airport &a, const Airport &b) {
+                    return timetable[day][f][a] < timetable[day][f][b];
+            });
+            next[day][f].erase(std::unique(next[day][f].begin(),
+                                           next[day][f].end()),
+                               next[day][f].end());
+        }
+    }
 }
 
 
@@ -120,11 +131,6 @@ static bool possibleAirports(const unsigned day, const Airport &from,
     }
     if (random && day < N - 1) {
         std::shuffle(dests.begin(), dests.end(), g);
-    } else if (greedy || day >= N - 1) {
-        std::sort(dests.begin(), dests.end(),
-                  [&](const Airport &a, const Airport &b) {
-            return timetable[day][from][a] < timetable[day][from][b];
-        });
     }
     return !dests.empty();
 }
